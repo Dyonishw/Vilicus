@@ -1,0 +1,47 @@
+@(updateForm: Form[forms.UpdateForm.UpdateClass], postUrl: Call)(implicit request: MessagesRequestHeader)
+
+    @import helper._
+
+    @main("UpdateTitle") {
+
+    @request.flash.data.map{ case (name, value) =>
+    <div>@name: @value</div>
+    }
+
+    @updateForm.error("deleteID").map { error =>
+    @error.key: @error.message
+    }
+
+    @* Global errors are not tied to any particular form field *@
+    @if(updateForm.hasGlobalErrors) {
+    @updateForm.globalErrors.map { error: FormError =>
+    <div>
+        @error.key: @error.message
+    </div>
+    }
+    }
+
+    @* Global errors are not tied to any particular form field *@
+    @if(updateForm.hasGlobalErrors) {
+    @updateForm.globalErrors.map { error: FormError =>
+    <li>@error.format</li>
+    <div>
+        @error.key: @error.message
+    </div>
+    }
+    }
+
+    @helper.form(postUrl) {
+
+    @helper.CSRF.formField
+
+    @helper.inputText(updateForm("updateID"))
+
+    @helper.inputText(updateForm("quantity"))
+
+    <button>Update Button</button>
+
+    <hr>
+    }
+
+    }

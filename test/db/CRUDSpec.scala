@@ -1,0 +1,5 @@
+package CRUD
+
+class CRUDSpec {
+
+}

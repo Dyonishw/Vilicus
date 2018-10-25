@@ -1,0 +1,5 @@
+package dbconnection
+
+class DbConnectionSpec {
+
+}

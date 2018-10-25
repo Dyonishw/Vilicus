@@ -1,0 +1,61 @@
+@(listItems: List[forms.CreateForm.ListItemRead], form: Form[forms.CreateForm.ListItemWrite],postUrl: Call)(implicit request: MessagesRequestHeader)
+
+
+    @main("List Items") {
+
+    <h1>These are your Items</h1>
+
+    @request.flash.data.map{ case (name, value) =>
+    <div>@name: @value</div>
+    }
+
+    <table>
+        <thead>
+        <tr><th>Item ID</th><th>Type</th><th>SubType</th><th>SKU</th><th>Quantity</th></tr>
+        </thead>
+        <tbody>
+        @for(w <- listItems) {
+        <tr><td>@w.id</td><td>@w.itemType</td><td>@w.itemSubType</td><td>@w.brand</td><td>@w.SKU</td><td>@w.quantity</td></tr>
+        }
+
+        </tbody>
+    </table>
+
+    <hr/>
+
+    @* Global errors are not tied to any particular form field *@
+    @if(form.hasGlobalErrors) {
+    @form.globalErrors.map { error: FormError =>
+    <div>
+        @error.key: @error.message
+    </div>
+    }
+    }
+
+    <hr>
+
+    <h1>Create a new Item</h1>
+
+    @helper.form(postUrl) {
+
+    @helper.CSRF.formField
+
+    @helper.inputText(form("id"))
+
+    @helper.inputText(form("itemType"))
+
+    @helper.inputText(form("itemSubType"))
+
+    @helper.inputText(form("brand"))
+
+    @helper.inputText(form("SKU"))
+
+    @helper.inputText(form("quantity"))
+
+    <button>Create Item</button>
+
+    <hr>
+
+    }
+
+    }

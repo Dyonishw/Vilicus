@@ -1,0 +1,46 @@
+@(singleForm: Form[forms.DeleteForm.DeleteIdClass], postUrl: Call)(implicit request: MessagesRequestHeader)
+
+
+    @import helper._
+
+    @main("DeleteTitle") {
+
+    @request.flash.data.map{ case (name, value) =>
+    <div>@name: @value</div>
+    }
+
+    @singleForm.error("deleteID").map { error =>
+    @error.key: @error.message
+    }
+
+    @* Global errors are not tied to any particular form field *@
+    @if(singleForm.hasGlobalErrors) {
+    @singleForm.globalErrors.map { error: FormError =>
+    <div>
+        @error.key: @error.message
+    </div>
+    }
+    }
+
+    @* Global errors are not tied to any particular form field *@
+    @if(singleForm.hasGlobalErrors) {
+    @singleForm.globalErrors.map { error: FormError =>
+    <li>@error.format</li>
+    <div>
+        @error.key: @error.message
+    </div>
+    }
+    }
+
+    @helper.form(postUrl) {
+
+    @helper.CSRF.formField
+
+    @helper.inputText(singleForm("deleteID"))
+
+    <button>Delete Button</button>
+
+    <hr>
+    }
+
+    }
