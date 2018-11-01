@@ -11,7 +11,7 @@ object CreateForm {
 
   val form = Form(
     mapping(
-      "id" -> number(min = 0),
+      "id" -> number(min = 1),
       "itemType" -> nonEmptyText,
       "itemSubType" -> nonEmptyText,
       "brand" -> nonEmptyText,

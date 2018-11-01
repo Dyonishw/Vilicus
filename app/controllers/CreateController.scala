@@ -29,10 +29,6 @@ class CreateController @Inject()(cc: MessagesControllerComponents, CRUD: CRUD)(i
     Ok(views.html.index())
   }
 
-  def indexTest() = Action { implicit request: Request[AnyContent] =>
-    Ok("OK")
-  }
-
   def listItems: Action[AnyContent] = Action.async {implicit request: MessagesRequest[AnyContent] =>
     CRUD.readAll.map(x => Ok(views.html.create(x, form, postUrl)))
   }

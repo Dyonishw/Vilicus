@@ -1,5 +1,0 @@
-package dbconnection
-
-class DbConnectionSpec {
-
-}
