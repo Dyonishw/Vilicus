@@ -1,6 +1,7 @@
 package controllers
 
 import crud.CRUD
+import forms.CreateForm.ListItemWrite
 import javax.inject._
 import play.api.mvc._
 import play.api.data._
@@ -14,10 +15,27 @@ class DeleteController @Inject()(cc: MessagesControllerComponents, CRUD: CRUD)(i
 
   private val deleteUrl = routes.DeleteController.deleteItem()
 
+  private val restoreUrl = routes.DeleteController.restore()
+
   import forms.DeleteForm._
 
   def showForm = Action { implicit request: MessagesRequest[AnyContent] =>
     Ok(views.html.delete(deleteForm, deleteUrl))
+  }
+
+  private val defaultItems = List(
+    ListItemWrite(1,"Oil", "OliveOil", "OliveOilBrand", "Litre" ,0),
+    ListItemWrite(2,"Oil", "SunflowerOil", "SunflowerOilBrand", "Litre" ,0),
+    ListItemWrite(3,"Sugar", "BrownSugar", "BrownSugarBrand", "Gram" ,0),
+    ListItemWrite(4,"Spice", "Cinnamon", "CinnamonBrand", "Gram" ,0),
+    ListItemWrite(5,"Tea", "GreenTea", "GreenTeaBrand", "Gram" ,0)
+  )
+
+  def restore = Action { implicit request: MessagesRequest[AnyContent] =>
+
+    println("it has reached restore " + request)
+    CRUD.restore(defaultItems)
+    Redirect(routes.CreateController.listItems()).flashing("info" -> "List reset to default")
   }
 
   def deleteItem = Action.async { implicit requestDelete: MessagesRequest[AnyContent] =>
@@ -35,7 +53,6 @@ class DeleteController @Inject()(cc: MessagesControllerComponents, CRUD: CRUD)(i
       val DeleteItem = DeleteIdClass(id = deleteIDValue.id)
 
       // TODO: Replace these println with logging
-      println("It has reached successFunction")
       println("Id for delete is: " + DeleteItem.id)
 
       CRUD.delete(DeleteItem.id)

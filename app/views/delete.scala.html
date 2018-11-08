@@ -22,16 +22,6 @@
     }
     }
 
-    @* Global errors are not tied to any particular form field *@
-    @if(singleForm.hasGlobalErrors) {
-    @singleForm.globalErrors.map { error: FormError =>
-    <li>@error.format</li>
-    <div>
-        @error.key: @error.message
-    </div>
-    }
-    }
-
     @helper.form(postUrl) {
 
     @helper.CSRF.formField
@@ -39,6 +29,15 @@
     @helper.inputText(singleForm("deleteID"))
 
     <button>Delete Button</button>
+
+    <hr>
+    }
+
+    @helper.form(action = routes.DeleteController.restore) {
+
+    <p>Warning: This button will delete all of your custom Items</p>
+
+    <button type="submit">Restore to default</button>
 
     <hr>
     }

@@ -1,12 +1,28 @@
-@(updateForm: Form[forms.UpdateForm.UpdateClass], postUrl: Call)(implicit request: MessagesRequestHeader)
+@(listItems: List[forms.CreateForm.ListItemRead], updateForm: Form[forms.UpdateForm.UpdateClass], postUrl: Call)(implicit request: MessagesRequestHeader)
 
     @import helper._
 
     @main("UpdateTitle") {
 
+    <h1>These are your Items with quantity > 0</h1>
+
     @request.flash.data.map{ case (name, value) =>
     <div>@name: @value</div>
     }
+
+    <table>
+        <thead>
+        <tr><th>Item ID</th><th>Type</th><th>SubType</th><th>SKU</th><th>Quantity</th></tr>
+        </thead>
+        <tbody>
+        @for(w <- listItems) {
+        <tr><td>@w.id</td><td>@w.itemType</td><td>@w.itemSubType</td><td>@w.brand</td><td>@w.SKU</td><td>@w.quantity</td></tr>
+        }
+
+        </tbody>
+    </table>
+
+    <hr/>
 
     @updateForm.error("deleteID").map { error =>
     @error.key: @error.message
@@ -21,15 +37,6 @@
     }
     }
 
-    @* Global errors are not tied to any particular form field *@
-    @if(updateForm.hasGlobalErrors) {
-    @updateForm.globalErrors.map { error: FormError =>
-    <li>@error.format</li>
-    <div>
-        @error.key: @error.message
-    </div>
-    }
-    }
 
     @helper.form(postUrl) {
 
@@ -42,6 +49,16 @@
     <button>Update Button</button>
 
     <hr>
+    }
+
+    @helper.form(action = routes.UpdateController.flushItems) {
+
+    <p>Warning: This button will set all Items to quantity 0</p>
+
+    <button type="submit">Set all items to quantity 0</button>
+
+    <hr>
+
     }
 
     }

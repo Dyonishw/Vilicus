@@ -2,8 +2,10 @@ package crud
 
 import dbconnection.DbConnection
 import doobie.implicits._
+import forms.CreateForm.ListItemRead
 import monix.execution.Scheduler.Implicits.global
 import javax.inject.{Inject, Singleton}
+
 import scala.concurrent.Future
 
 @Singleton
@@ -79,7 +81,7 @@ class CRUD @Inject() (db: DbConnection){
 
   // Sets all of the Items to quantity 0
   // Not implemented yet
-    def flushList(): Future[Unit] = {
+    def flushItems(): Future[Unit] = {
     sql"""
          update
          products
@@ -113,17 +115,31 @@ class CRUD @Inject() (db: DbConnection){
       .map(_ => ())
   }
 
-  // TODO: Implement this
-  // retore list to default
-  //  def restore = {
-  //    sql"""
-  //          drop *
-  //          from products;
-  //          insert into
-  //          products
-  //          values
-  //          ('hard coded values here')
-  //       """
-  //  }
+  // restore list to default
+    def restore(defaults: List[ListItemWrite]) = {
 
+    sql"""
+         delete
+         from products
+       """
+      .update
+      .run
+      .transact(db.transactor)
+      .runAsync
+      .map(_ => ())
+
+    defaults.foreach(item =>
+       sql"""
+            insert into
+            products
+            values
+            (${item.id}, ${item.itemType}, ${item.itemSubType}, ${item.brand}, ${item.SKU}, ${item.quantity})
+         """
+         .update
+         .run
+         .transact(db.transactor)
+         .runAsync
+         .map(_ => ())
+    )
+    }
 }

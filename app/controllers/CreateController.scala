@@ -10,19 +10,14 @@ import scala.concurrent.Future
 
 
 @Singleton
-class CreateController @Inject()(cc: MessagesControllerComponents, CRUD: CRUD)(implicit assetsFinder: AssetsFinder)
+class CreateController @Inject()(cc: MessagesControllerComponents,CRUD: CRUD)
+                                (implicit assetsFinder: AssetsFinder)
   extends MessagesAbstractController(cc) {
 
   import forms.CreateForm._
 
-  // TODO: Refactor and hard-code some default Items
-  private val items = scala.collection.mutable.ArrayBuffer(
-    ListItemRead(1337,"Ulei", "Masline", "Costa D'oro","Litri",1 ),
-    ListItemRead(1338,"Ulei", "Floarea Soarelui", "Solarie","Litri",1 ),
-    ListItemRead(1339,"Ulei", "Portocale", "Portocalis","Litri",1 )
-  )
-
   private val postUrl = routes.CreateController.createItem()
+
 
   // TODO: remove this
   def index() = Action { implicit request: Request[AnyContent] =>
@@ -41,8 +36,7 @@ class CreateController @Inject()(cc: MessagesControllerComponents, CRUD: CRUD)(i
       println(formWithErrors.discardingErrors)
       println(formWithErrors.errors)
 
-      // TODO: refactor this. The maps are not needed
-      CRUD.readAll.map(_.toList).map(x =>
+      CRUD.readAll.map(x =>
         BadRequest(views.html.create(x, formWithErrors, postUrl)))
 
     }

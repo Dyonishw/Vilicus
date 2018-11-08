@@ -15,8 +15,4 @@ class HomeController @Inject()(cc: ControllerComponents) extends AbstractControl
     Ok(views.html.index())
   }
 
-  def indexTest() = Action { implicit request: Request[AnyContent] =>
-    Ok("OK")
-  }
-
 }
