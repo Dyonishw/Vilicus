@@ -2,58 +2,66 @@ package controllers
 
 import crud.CRUD
 import javax.inject._
-import play.api.mvc._
-import play.api.data._
+import play.api.mvc.{PlayBodyParsers => _, _}
+import play.api.http.{ContentTypeOf, ContentTypes,Writeable}
+import play.filters.csrf._
+import play.filters.csrf.CSRF.Token
 
+import io.circe._
+import io.circe.generic.auto._
+import io.circe.syntax._
+import io.circe.parser.{parse => circeParse, decode => circeDecode}
+
+import utils.NotFoundException
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
+import scribe._
 
 @Singleton
-class CreateController @Inject()(cc: MessagesControllerComponents,CRUD: CRUD)
+class CreateController @Inject()(cc: MessagesControllerComponents,
+                                 CRUD: CRUD,
+                                 addToken: CSRFAddToken,
+                                 checkToken: CSRFCheck)
                                 (implicit assetsFinder: AssetsFinder)
   extends MessagesAbstractController(cc) {
 
   import forms.CreateForm._
 
-  private val postUrl = routes.CreateController.createItem()
+  // TODO: This is not used anymore
+//  private val postUrl = routes.CreateController.createItem()
 
+  private val defaultPrinter = Printer.noSpaces
 
-  // TODO: remove this
-  def index() = Action { implicit request: Request[AnyContent] =>
-    Ok(views.html.index())
+  implicit val contentTypeOf_Json: ContentTypeOf[Json] = {
+    ContentTypeOf(Some(ContentTypes.JSON))
+  }
+  implicit def writableOf_Json(implicit codec: Codec, printer: Printer = defaultPrinter): Writeable[Json] = {
+    Writeable(a => codec.encode(a.pretty(printer)))
   }
 
   def listItems: Action[AnyContent] = Action.async {implicit request: MessagesRequest[AnyContent] =>
-    CRUD.readAll.map(x => Ok(views.html.create(x, form, postUrl)))
+
+    scribe.info("It has reached listItems: " + request)
+
+    for {
+      x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
+    } yield Ok(x)
+
   }
 
-  def createItem = Action.async { implicit request: MessagesRequest[AnyContent] =>
+  // TODO: https://stackoverflow.com/questions/50713068/how-to-generate-csrf-token-in-reactjs-and-send-to-play-framework
+  def createItem = addToken(Action.async { implicit request: MessagesRequest[AnyContent] =>
 
-    val errorFunction = { formWithErrors: Form[ListItemWrite] =>
+    val Token(name, value) = CSRF.getToken.get
 
-      // TODO: Remove these println
-      println(formWithErrors.discardingErrors)
-      println(formWithErrors.errors)
+    val rawRequest = request.body.asJson.get
 
-      CRUD.readAll.map(x =>
-        BadRequest(views.html.create(x, formWithErrors, postUrl)))
+    scribe.info("rawRequest in createItem: " + request)
 
-    }
+    for {
+      _ <- CRUD.createCustomItem(circeDecode[ListItemWrite](rawRequest.toString).getOrElse(throw NotFoundException()))
+      x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
+    } yield Ok(x)
 
-    val successFunction = { items: ListItemWrite =>
-
-      val CreateItem = ListItemWrite(id = items.id, itemType = items.itemType, itemSubType = items.itemSubType,
-        brand = items.brand, SKU = items.SKU, quantity = items.quantity)
-
-      CRUD.createCustomItem(CreateItem)
-
-      // TODO: Add the item to the flashing info
-      Future.successful(Redirect(routes.CreateController.listItems()).flashing("info" -> "Item created"))
-    }
-
-    val formValidationResult = form.bindFromRequest
-    formValidationResult.fold(errorFunction, successFunction)
-  }
+  })
 
 }

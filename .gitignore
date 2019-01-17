@@ -6,4 +6,7 @@ target
 /.classpath
 /.project
 /.settings
+/ui/node_modules
 /RUNNING_PID
+/public
+ui/package-lock.json

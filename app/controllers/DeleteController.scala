@@ -1,26 +1,38 @@
 package controllers
 
 import crud.CRUD
-import forms.CreateForm.ListItemWrite
 import javax.inject._
 import play.api.mvc._
-import play.api.data._
+import play.api.http.{ContentTypeOf, ContentTypes, Writeable}
 
+import io.circe._
+import io.circe.generic.auto._
+import io.circe.syntax._
+import io.circe.parser.{decode => circeDecode, parse => circeParse}
+
+import utils.NotFoundException
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scribe._
+
 
 @Singleton
 class DeleteController @Inject()(cc: MessagesControllerComponents, CRUD: CRUD)(implicit assetsFinder: AssetsFinder)
-  extends MessagesAbstractController(cc) {
+extends MessagesAbstractController(cc) {
 
-  private val deleteUrl = routes.DeleteController.deleteItem()
-
-  private val restoreUrl = routes.DeleteController.restore()
+  // TODO: These 2 are not used anymore
+//  private val restoreUrl = routes.DeleteController.restore()
+  //  private val deleteUrl = routes.DeleteController.deleteItem()
 
   import forms.DeleteForm._
+  import forms.CreateForm.ListItemWrite
 
-  def showForm = Action { implicit request: MessagesRequest[AnyContent] =>
-    Ok(views.html.delete(deleteForm, deleteUrl))
+  private val defaultPrinter = Printer.noSpaces
+
+  implicit val contentTypeOf_Json: ContentTypeOf[Json] = {
+    ContentTypeOf(Some(ContentTypes.JSON))
+  }
+  implicit def writableOf_Json(implicit codec: Codec, printer: Printer = defaultPrinter): Writeable[Json] = {
+    Writeable(a => codec.encode(a.pretty(printer)))
   }
 
   private val defaultItems = List(
@@ -31,36 +43,28 @@ class DeleteController @Inject()(cc: MessagesControllerComponents, CRUD: CRUD)(i
     ListItemWrite(5,"Tea", "GreenTea", "GreenTeaBrand", "Gram" ,0)
   )
 
-  def restore = Action { implicit request: MessagesRequest[AnyContent] =>
+  def restore = Action.async { implicit request: MessagesRequest[AnyContent] =>
 
-    println("it has reached restore " + request)
-    CRUD.restore(defaultItems)
-    Redirect(routes.CreateController.listItems()).flashing("info" -> "List reset to default")
+    scribe.info("It has reached restore: " + request)
+
+    for {
+      _ <- CRUD.restore(defaultItems)
+      x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
+    } yield Ok(x)
+
   }
 
   def deleteItem = Action.async { implicit requestDelete: MessagesRequest[AnyContent] =>
 
-    val errorFunction = { formWithErrors: Form[DeleteIdClass] =>
+    val rawRequest = requestDelete.body.asJson.get
 
-      // TODO: Replace these println with logging
-      println(formWithErrors.errors)
+    scribe.info("rawRequest in deleteItem: " + rawRequest)
 
-      Future.successful(BadRequest(views.html.delete(formWithErrors, deleteUrl)))
-    }
+    for {
+      _ <- CRUD.delete(circeDecode[DeleteIdClass](rawRequest.toString).getOrElse(throw NotFoundException()))
+      x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
+    } yield Ok(x)
 
-    val successFunction = { deleteIDValue: DeleteIdClass =>
-
-      val DeleteItem = DeleteIdClass(id = deleteIDValue.id)
-
-      // TODO: Replace these println with logging
-      println("Id for delete is: " + DeleteItem.id)
-
-      CRUD.delete(DeleteItem.id)
-
-      Future.successful(Redirect(routes.CreateController.listItems()).flashing("info" -> "Item deleted"))
-    }
-
-    val formValidationResultDelete = deleteForm.bindFromRequest
-    formValidationResultDelete.fold(errorFunction, successFunction)
   }
+
 }

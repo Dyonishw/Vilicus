@@ -5,7 +5,8 @@ object DeleteForm {
   import play.api.data.Form
   import play.api.data.Forms._
 
-  case class DeleteIdClass(id: Int)
+
+  case class DeleteIdClass(deleteId: Int)
 
   // This could be a single form
   val deleteForm = Form(
