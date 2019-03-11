@@ -39,10 +39,14 @@ libraryDependencies ++= Seq(
 
 libraryDependencies ++= {
   Seq(
-//    "org.apache.kafka" %% "kafka" % "2.1.0",
+    "org.apache.kafka" %% "kafka" % "2.1.0",
     "org.apache.kafka" % "kafka-clients" % "2.1.0",
     "org.apache.kafka" % "kafka-streams" % "2.1.0"
   )
 }
 
 libraryDependencies += "com.outr" %% "scribe" % "2.6.0"
+libraryDependencies += "com.github.pureconfig" %% "pureconfig" % "0.10.2"
+
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.5.20"
+

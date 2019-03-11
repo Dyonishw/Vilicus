@@ -4,17 +4,13 @@
 # ~~~~
 
 GET     /api/allitems               controllers.CreateController.listItems
-+nocsrf
 POST    /api/create                 controllers.CreateController.createItem
 
-+nocsrf
 POST    /api/delete                 controllers.DeleteController.deleteItem
 GET     /api/restore                controllers.DeleteController.restore
 
 GET     /api/currentitems           controllers.UpdateController.listItems
-+nocsrf
 POST    /api/updatecurrent          controllers.UpdateController.updateItem
-+nocsrf
 GET     /api/flush                  controllers.UpdateController.flushItems
 
 # An example route (Prefix all API routes with apiPrefix defined in application.conf)
