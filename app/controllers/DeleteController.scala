@@ -4,6 +4,7 @@ import crud.CRUD
 import javax.inject._
 import play.api.mvc._
 import play.api.http.{ContentTypeOf, ContentTypes, Writeable}
+import play.filters.csrf._
 
 import io.circe._
 import io.circe.generic.auto._
@@ -16,8 +17,12 @@ import scribe._
 
 
 @Singleton
-class DeleteController @Inject()(cc: MessagesControllerComponents, CRUD: CRUD)(implicit assetsFinder: AssetsFinder)
-extends MessagesAbstractController(cc) {
+class DeleteController @Inject()(cc: MessagesControllerComponents,
+                                 CRUD: CRUD,
+                                 addToken: CSRFAddToken,
+                                 checkToken: CSRFCheck)
+                                (implicit assetsFinder: AssetsFinder)
+  extends MessagesAbstractController(cc) {
 
   // TODO: These 2 are not used anymore
 //  private val restoreUrl = routes.DeleteController.restore()
@@ -43,28 +48,32 @@ extends MessagesAbstractController(cc) {
     ListItemWrite(5,"Tea", "GreenTea", "GreenTeaBrand", "Gram" ,0)
   )
 
-  def restore = Action.async { implicit request: MessagesRequest[AnyContent] =>
+  def restore = checkToken{
+    Action.async { implicit request: MessagesRequest[AnyContent] =>
 
-    scribe.info("It has reached restore: " + request)
+      scribe.info("It has reached restore: " + request)
 
-    for {
-      _ <- CRUD.restore(defaultItems)
-      x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
-    } yield Ok(x)
+      for {
+        _ <- CRUD.restore(defaultItems)
+        x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
+      } yield Ok(x)
 
+    }
   }
 
-  def deleteItem = Action.async { implicit requestDelete: MessagesRequest[AnyContent] =>
+  def deleteItem = checkToken {
+    Action.async { implicit request: MessagesRequest[AnyContent] =>
 
-    val rawRequest = requestDelete.body.asJson.get
+      val rawRequest = request.body.asJson.get
 
-    scribe.info("rawRequest in deleteItem: " + rawRequest)
+      scribe.info("rawRequest in deleteItem: " + rawRequest)
 
-    for {
-      _ <- CRUD.delete(circeDecode[DeleteIdClass](rawRequest.toString).getOrElse(throw NotFoundException()))
-      x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
-    } yield Ok(x)
+      for {
+        _ <- CRUD.delete(circeDecode[DeleteIdClass](rawRequest.toString).getOrElse(throw NotFoundException()))
+        x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
+      } yield Ok(x)
 
+    }
   }
 
 }

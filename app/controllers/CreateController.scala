@@ -2,11 +2,11 @@ package controllers
 
 import crud.CRUD
 import javax.inject._
+import play.api.mvc._
 import play.api.mvc.{PlayBodyParsers => _, _}
 import play.api.http.{ContentTypeOf, ContentTypes,Writeable}
 import play.filters.csrf._
 import play.filters.csrf.CSRF.Token
-
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -15,6 +15,7 @@ import io.circe.parser.{parse => circeParse, decode => circeDecode}
 import utils.NotFoundException
 import scala.concurrent.ExecutionContext.Implicits.global
 import scribe._
+
 
 @Singleton
 class CreateController @Inject()(cc: MessagesControllerComponents,
@@ -38,30 +39,41 @@ class CreateController @Inject()(cc: MessagesControllerComponents,
     Writeable(a => codec.encode(a.pretty(printer)))
   }
 
-  def listItems: Action[AnyContent] = Action.async {implicit request: MessagesRequest[AnyContent] =>
+  def listItems: Action[AnyContent] = addToken {
+    Action.async {implicit request: MessagesRequest[AnyContent] =>
 
-    scribe.info("It has reached listItems: " + request)
+      scribe.info("It has reached listItems: " + request)
+      scribe.info(
+        s"""id  = ${request.id}
+           | method = ${request.method}
+           | uri = ${request.uri}
+           | remote-address = ${request.remoteAddress}
+           | body = ${request.body.asJson}
+           | rawQueryString = ${request.rawQueryString}
+           | headers = ${request.headers}
+           | CSRFToken = ${request.session.data}
+         """.stripMargin)
 
-    for {
-      x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
-    } yield Ok(x)
+      for {
+        x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
+        _ = println(Ok(x.noSpaces).toString() + "this is the response body")
+      } yield Ok(x)
 
+    }
   }
 
-  // TODO: https://stackoverflow.com/questions/50713068/how-to-generate-csrf-token-in-reactjs-and-send-to-play-framework
-  def createItem = addToken(Action.async { implicit request: MessagesRequest[AnyContent] =>
+  def createItem = checkToken {
+      Action.async { implicit request: MessagesRequest[AnyContent] =>
 
-    val Token(name, value) = CSRF.getToken.get
+      val rawRequest = request.body.asJson.get
+      scribe.info("rawRequest in createItem: " + request)
 
-    val rawRequest = request.body.asJson.get
+      for {
+        _ <- CRUD.createCustomItem(circeDecode[ListItemWrite](rawRequest.toString).getOrElse(throw NotFoundException()))
+        x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
+      } yield Ok(x)
 
-    scribe.info("rawRequest in createItem: " + request)
-
-    for {
-      _ <- CRUD.createCustomItem(circeDecode[ListItemWrite](rawRequest.toString).getOrElse(throw NotFoundException()))
-      x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
-    } yield Ok(x)
-
-  })
+    }
+  }
 
 }

@@ -6,11 +6,12 @@
     "react": "^16.6.3",
     "react-dom": "^16.6.3",
     "react-router-dom": "^4.3.1",
-    "react-scripts": "2.1.1"
+    "react-scripts": "2.1.1",
+    "react-cookie": "3.0.8"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "rimraf ../public && react-scripts build && ncp build ../public && rimraf build",
+    "build": "rimraf ../public && react-scripts build && ncp build ../public && rimraf build && react-cookie build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -25,7 +26,9 @@
     "not op_mini all"
   ],
   "devDependencies": {
+    "js-cookie": "^2.2.0",
     "ncp": "^2.0.0",
+    "react-cookie": "^3.0.8",
     "rimraf": "^2.6.2"
   }
 }

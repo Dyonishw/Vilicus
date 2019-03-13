@@ -4,8 +4,7 @@ import crud.CRUD
 import javax.inject._
 import play.api.mvc._
 import play.api.http.{ContentTypeOf, ContentTypes, Writeable}
-import play.filters.csrf.{CSRF, CSRFAddToken, CSRFCheck}
-import play.filters.csrf.CSRF.Token
+import play.filters.csrf._
 
 import io.circe._
 import io.circe.generic.auto._
@@ -38,43 +37,45 @@ class UpdateController @Inject()(cc: MessagesControllerComponents,
   // TODO: This is not used anymore
 //  private val UpdateUrl = routes.UpdateController.updateItem()
 
-  def listItems: Action[AnyContent] = Action.async {implicit request: MessagesRequest[AnyContent] =>
+  def listItems: Action[AnyContent] = addToken {
+    Action.async {implicit request: MessagesRequest[AnyContent] =>
 
-    scribe.info("It has reached listItems: " + request)
+      scribe.info("It has reached listItems: " + request)
 
-    for {
-      x <- CRUD.read.map(x => x.asJson.noSpaces)
-    } yield Ok(x)
+      for {
+        x <- CRUD.read.map(x => x.asJson.noSpaces)
+      } yield Ok(x)
 
+    }
   }
 
-  def flushItems = addToken(Action.async { implicit request: MessagesRequest[AnyContent] =>
+  def flushItems = checkToken {
+    Action.async { implicit request: MessagesRequest[AnyContent] =>
 
-    scribe.info("It has reached flushItems: " + request.body)
+      scribe.info("It has reached flushItems: " + request.body)
 
-    val Token(name, value) = CSRF.getToken.get
+      for {
+        _ <- CRUD.flushItems()
+        x <- CRUD.read.map(x => x.asJson.noSpaces)
+      } yield Ok(x)
 
-    for {
-      _ <- CRUD.flushItems()
-      x <- CRUD.read.map(x => x.asJson.noSpaces)
-    } yield Ok(x)
+    }
+  }
 
-  })
+  def updateItem = checkToken {
+    Action.async { implicit request: MessagesRequest[AnyContent] =>
 
-  def updateItem = addToken(Action.async { implicit  updateRequest: MessagesRequest[AnyContent] =>
+      val rawRequest = request.body.asJson.get
 
-    val Token(name, value) = CSRF.getToken.get
+      scribe.info("rawRequest in updateItem: " + rawRequest)
 
-    val rawRequest = updateRequest.body.asJson.get
+      // FIXME: This uses asJson from Play instead of Circe
+      for {
+        _ <- CRUD.update(circeDecode[UpdateClass](rawRequest.toString).getOrElse(throw NotFoundException()))
+        x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
+      } yield Ok(x)
 
-    scribe.info("rawRequest in updateItem: " + rawRequest)
-
-    // FIXME: This uses asJson from Play instead of Circe
-    for {
-      _ <- CRUD.update(circeDecode[UpdateClass](rawRequest.toString).getOrElse(throw NotFoundException()))
-      x <- CRUD.readAll.map(x => circeParse(x.asJson.noSpaces).getOrElse(throw NotFoundException()))
-    } yield Ok(x)
-
-  })
+    }
+  }
 
 }

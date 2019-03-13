@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import {withRouter} from 'react-router';
+import Cookies from 'js-cookie';
 
 class CurrentShoppingList extends Component {
 
@@ -10,7 +11,8 @@ class CurrentShoppingList extends Component {
       id: '',
       quantity: '',
       updateArray: [],
-      receivedList: []
+      receivedList: [],
+      myToken: Cookies.get('MyCSRFToken')
 
     };
 
@@ -27,7 +29,7 @@ class CurrentShoppingList extends Component {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-      },
+      }
     })
     .then((response) => response.json())
     .then(data => {
@@ -47,6 +49,7 @@ class CurrentShoppingList extends Component {
   }
 
   handleUpdate(e) {
+
     e.preventDefault()
 
     const data = {
@@ -59,7 +62,8 @@ class CurrentShoppingList extends Component {
       body: JSON.stringify(data),
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Csrf-Token': this.state.myToken
       }
     })
       .then(response => response.json())
@@ -73,7 +77,11 @@ class CurrentShoppingList extends Component {
   handleFlush(e) {
     e.preventDefault();
 
-    fetch('/api/flush')
+    fetch('/api/flush', {
+      headers: {
+        'Csrf-Token': this.state.myToken
+      }
+    })
       .then(response => response.json())
       .then(data => {
         this.setState({

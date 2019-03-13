@@ -1,5 +1,7 @@
 import React, {Component} from 'react';
 import {withRouter} from 'react-router';
+import Cookies from 'js-cookie';
+
 
 class AllItemsList extends Component {
 
@@ -17,7 +19,8 @@ class AllItemsList extends Component {
       receivedList: [],
       deleteId: '',
       stringList: "",
-      deleteId: ''
+      deleteId: '',
+      myToken: Cookies.get('MyCSRFToken')
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -28,6 +31,14 @@ class AllItemsList extends Component {
   }
 
   componentDidMount() {
+
+    const csrf_token = document.getElementsByName('csrfToken')[0].value;
+
+    console.log(csrf_token + " This is the console log ")
+    console.log(this.props.token + " This si the props token")
+    console.log(this.props.headers)
+//    const str = JSON.stringify(Cookies.get())
+    console.log(Cookies.get())
 
     fetch('/api/allitems')
     .then(response => response.json())
@@ -66,8 +77,10 @@ class AllItemsList extends Component {
       body: JSON.stringify(data),
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+        'Csrf-Token': this.state.myToken
+      },
+    credentials: 'include'
     })
     .then(response => response.json())
     .then(data => {
@@ -79,7 +92,7 @@ class AllItemsList extends Component {
 
   handleDeleteSubmit(e) {
 
-    e.preventDefault();
+    e.preventDefault()
 
     const data = {
       "deleteId": this.state.deleteId,
@@ -90,9 +103,11 @@ class AllItemsList extends Component {
       body: JSON.stringify(data),
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-    }).then(response => response.json())
+        'Content-Type': 'application/json',
+        'Csrf-Token': this.state.myToken
+      }
+    })
+    .then(response => response.json())
     .then(data => {
           this.setState({
            receivedList: data
@@ -101,13 +116,16 @@ class AllItemsList extends Component {
   }
 
   handleRestore(e) {
+
     e.preventDefault();
 
     fetch('/api/restore' , {
       method: "GET",
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Csrf-Token': this.state.myToken
+
       },
     })
     .then(response => response.json())
@@ -207,6 +225,11 @@ class AllItemsList extends Component {
             value={this.state.quantity}
             onChange={this.handleChange} />
           </label>
+          <input
+           type="hidden"
+           name="csrfToken"
+           value={this.props.token}/>
+
           <input type="submit" value="Submit" />
         </form>
       </div>
